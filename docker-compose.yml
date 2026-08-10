@@ -5,6 +5,10 @@ services:
       - "${PORT:-3117}:${PORT:-3117}"
     env_file:
       - .env
+    environment:
+      # Bind all interfaces inside the container so the mapped port is reachable.
+      # The host port mapping above is the network boundary, not the app bind.
+      - HOST=0.0.0.0
     volumes:
       - ./runs:/app/runs
     restart: unless-stopped

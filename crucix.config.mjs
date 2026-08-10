@@ -4,6 +4,9 @@ import "./apis/utils/env.mjs"; // Load .env first
 
 export default {
   port: parseInt(process.env.PORT) || 3117,
+  // Network interface to bind. Defaults to loopback so the dashboard is not
+  // exposed to the local network. Set HOST=0.0.0.0 to expose it (e.g. Docker).
+  host: process.env.HOST || '127.0.0.1',
   publicUrl: process.env.PUBLIC_URL || null,
   refreshIntervalMinutes: parseInt(process.env.REFRESH_INTERVAL_MINUTES) || 15,
 
