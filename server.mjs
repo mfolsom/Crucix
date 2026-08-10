@@ -422,7 +422,7 @@ async function start() {
   ╚══════════════════════════════════════════════╝
   `);
 
-  const server = app.listen(port);
+  const server = app.listen(port, config.host);
 
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {

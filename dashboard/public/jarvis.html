@@ -907,7 +907,7 @@ function plotMarkers(){
       lat:o.lat, lng:o.lon, size:0.3, alt:0.018,
       color:'rgba(255,184,76,0.8)', type:'osint', priority:2,
       popHead:(post.channel||'').toUpperCase(), popMeta:`${post.views?.toLocaleString()||'?'} views`,
-      popText:cleanText(post.text?.substring(0,200)||'')
+      popText:stripTags(post.text?.substring(0,200)||'')
     });
   });
 
@@ -928,7 +928,7 @@ function plotMarkers(){
       lat:n.lat, lng:n.lon, size:0.2, alt:0.008,
       color:'rgba(129,212,250,0.7)', type:'news', priority:3,
       popHead:n.source+' NEWS', popMeta:n.region+' · '+getAge(n.date),
-      popText:cleanText(n.title)
+      popText:stripTags(n.title)
     });
   });
 
@@ -1088,7 +1088,7 @@ function showPopup(event,head,text,meta,lat,lng,alt){
   if(top<0) top=10;
   popup.style.left=left+'px';popup.style.top=top+'px';
   popup.querySelector('.pp-head').textContent=head||'';
-  popup.querySelector('.pp-text').innerHTML=text||'';
+  popup.querySelector('.pp-text').innerHTML=safePopupHtml(text);
   popup.querySelector('.pp-meta').textContent=meta||'';
   popup.classList.add('show');
 }
@@ -1234,12 +1234,12 @@ function plotFlatMarkers(){
   D.sdr.zones.forEach(z=>z.receivers.forEach(r=>{addPt(r.lat,r.lon,2.5,'rgba(68,204,255,0.5)','rgba(68,204,255,0.2)',ev=>showPopup(ev,'SDR',`${r.name}<br>${z.region}`,'KiwiSDR'),3)}));
   // OSINT
   const osintGeo=[{lat:45,lon:41,idx:0},{lat:48,lon:37,idx:1},{lat:48.5,lon:37.5,idx:2},{lat:45,lon:40.2,idx:3},{lat:50.6,lon:36.6,idx:5},{lat:48.5,lon:35,idx:6}];
-  osintGeo.forEach(o=>{const p=D.tg.urgent[o.idx];if(!p)return;addPt(o.lat,o.lon,4,'rgba(255,184,76,0.7)','rgba(255,184,76,0.3)',ev=>showPopup(ev,(p.channel||'').toUpperCase(),cleanText(p.text?.substring(0,200)||''),`${p.views||'?'} views`),2)});
+  osintGeo.forEach(o=>{const p=D.tg.urgent[o.idx];if(!p)return;addPt(o.lat,o.lon,4,'rgba(255,184,76,0.7)','rgba(255,184,76,0.3)',ev=>showPopup(ev,(p.channel||'').toUpperCase(),stripTags(p.text?.substring(0,200)||''),`${p.views||'?'} views`),2)});
   // WHO
   const whoGeo=[{lat:0.3,lon:32.6},{lat:-6.2,lon:106.8},{lat:-4.3,lon:15.3},{lat:35,lon:105},{lat:12.5,lon:105},{lat:35,lon:105},{lat:28,lon:84},{lat:24,lon:45},{lat:30,lon:70},{lat:-0.8,lon:11.6}];
   D.who.slice(0,10).forEach((w,i)=>{const c=whoGeo[i];if(!c)return;addPt(c.lat,c.lon,3.5,'rgba(105,240,174,0.6)','rgba(105,240,174,0.2)',ev=>showPopup(ev,w.title,w.summary||'','WHO'),2)});
   // News
-  (D.news||[]).forEach(n=>{addPt(n.lat,n.lon,3,'rgba(129,212,250,0.6)','rgba(129,212,250,0.2)',ev=>showPopup(ev,n.source+' NEWS',cleanText(n.title),n.region),3)});
+  (D.news||[]).forEach(n=>{addPt(n.lat,n.lon,3,'rgba(129,212,250,0.6)','rgba(129,212,250,0.2)',ev=>showPopup(ev,n.source+' NEWS',stripTags(n.title),n.region),3)});
   // NOAA weather
   (D.noaa?.alerts||[]).forEach(a=>{addPt(a.lat,a.lon,4,'rgba(255,152,0,0.7)','rgba(255,152,0,0.3)',ev=>showPopup(ev,a.event,a.headline||'','NOAA/NWS'),2)});
   // EPA RadNet
@@ -1364,7 +1364,7 @@ function renderLower(){
       : isIndex
         ? q.price.toLocaleString(undefined, {maximumFractionDigits: 2})
         : `$${q.price}`;
-    return `<div class="mc"><div class="ml">${q.name||q.symbol}</div><span class="mv" style="color:${clr}">${price}</span><span class="ms" style="color:${clr}">${arrow} ${q.changePct>=0?'+':''}${q.changePct}%</span></div>`;
+    return `<div class="mc"><div class="ml">${escHtml(q.name||q.symbol)}</div><span class="mv" style="color:${clr}">${price}</span><span class="ms" style="color:${clr}">${arrow} ${q.changePct>=0?'+':''}${q.changePct}%</span></div>`;
   };
 
   // VIX from Yahoo Finance live data (fallback to FRED)
@@ -1429,7 +1429,7 @@ function renderLower(){
     const sc = srcClass(n.source);
     const age = n.timestamp ? getAge(n.timestamp) : '';
     const urlAttr = n.url ? ` data-url="${String(n.url).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}"` : '';
-    return `<div class="tk-card ${n.urgent?'urgent':''} ${n.url?'clickable':''}"${urlAttr}><span class="tk-src ${sc}">${(n.source||'NEWS').substring(0,12)}</span><span class="tk-time">${age}</span><div class="tk-head">${cleanText(n.headline||'')}</div>${n.url?'<span class="tk-link">&#8599;</span>':''}</div>`;
+    return `<div class="tk-card ${n.urgent?'urgent':''} ${n.url?'clickable':''}"${urlAttr}><span class="tk-src ${sc}">${escHtml((n.source||'NEWS').substring(0,12))}</span><span class="tk-time">${age}</span><div class="tk-head">${cleanText(n.headline||'')}</div>${n.url?'<span class="tk-link">&#8599;</span>':''}</div>`;
   }).join('');
   const tickerDuration = Math.max(20, feed.length * 2.5);
 
@@ -1437,13 +1437,13 @@ function renderLower(){
   const hasIdeas = D.ideas && D.ideas.length > 0;
   const ideasHtml = hasIdeas ? (D.ideas||[]).map(idea=>`
     <div class="idea-card">
-      <span class="idea-type ${(idea.type||'').toLowerCase()}">${(idea.type||'').toUpperCase()}</span>
-      ${idea.ticker ? `<span class="idea-horizon">${idea.ticker}</span>` : ''}
-      ${idea.horizon ? `<span class="idea-horizon">${idea.horizon}</span>` : ''}
-      <span class="idea-conf">${idea.confidence} confidence</span>
-      <div class="idea-title">${idea.title}</div>
-      <div class="idea-text">${idea.text||idea.rationale||''}</div>
-      ${idea.risk ? `<div class="idea-text" style="color:var(--warn);margin-top:3px">Risk: ${idea.risk}</div>` : ''}
+      <span class="idea-type ${(idea.type||'').toLowerCase()}">${escHtml((idea.type||'').toUpperCase())}</span>
+      ${idea.ticker ? `<span class="idea-horizon">${escHtml(idea.ticker)}</span>` : ''}
+      ${idea.horizon ? `<span class="idea-horizon">${escHtml(idea.horizon)}</span>` : ''}
+      <span class="idea-conf">${escHtml(idea.confidence)} confidence</span>
+      <div class="idea-title">${escHtml(idea.title)}</div>
+      <div class="idea-text">${escHtml(idea.text||idea.rationale||'')}</div>
+      ${idea.risk ? `<div class="idea-text" style="color:var(--warn);margin-top:3px">Risk: ${escHtml(idea.risk)}</div>` : ''}
     </div>`).join('') : `<div style="padding:20px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:11px">
       <div style="font-size:24px;margin-bottom:8px;opacity:0.3">&#9888;</div>
       <div>LLM NOT CONFIGURED</div>
@@ -1492,7 +1492,7 @@ function renderLower(){
 function renderRight(){
   const mobile = isMobileLayout();
   // CROSS-SOURCE SIGNALS — moved from lower grid to right rail
-  const signals=D.tSignals.slice(0,6).map((s,i)=>`<div class="signal-row"><strong>Signal ${i+1}</strong><p>${s}</p></div>`).join('');
+  const signals=D.tSignals.slice(0,6).map((s,i)=>`<div class="signal-row"><strong>Signal ${i+1}</strong><p>${escHtml(s)}</p></div>`).join('');
 
   // OSINT TICKER — Telegram + WHO as flowing cards
   const signalMetrics=[
@@ -1515,16 +1515,16 @@ function renderRight(){
   const newSigs = (delta.signals?.new || []).slice(0,4);
   const deltaRows = [];
   for(const s of newSigs){
-    deltaRows.push(`<div class="delta-row new"><span class="delta-badge new">NEW</span><span class="delta-label">${s.reason||s.label||s.key}</span></div>`);
+    deltaRows.push(`<div class="delta-row new"><span class="delta-badge new">NEW</span><span class="delta-label">${escHtml(s.reason||s.label||s.key)}</span></div>`);
   }
   for(const s of escalated){
     const sev = s.severity==='critical'?'style="color:var(--warn);font-weight:600"':s.severity==='high'?'style="color:#ffab40"':'';
     const val = s.pctChange!==undefined?`${s.pctChange>0?'+':''}${s.pctChange}%`:`${s.change>0?'+':''}${s.change}`;
-    deltaRows.push(`<div class="delta-row"><span class="delta-badge up">&#9650;</span><span class="delta-label" ${sev}>${s.label}</span><span class="delta-val">${s.from}→${s.to} (${val})</span></div>`);
+    deltaRows.push(`<div class="delta-row"><span class="delta-badge up">&#9650;</span><span class="delta-label" ${sev}>${escHtml(s.label)}</span><span class="delta-val">${escHtml(s.from)}→${escHtml(s.to)} (${escHtml(val)})</span></div>`);
   }
   for(const s of deescalated){
     const val = s.pctChange!==undefined?`${s.pctChange}%`:`${s.change}`;
-    deltaRows.push(`<div class="delta-row"><span class="delta-badge down">&#9660;</span><span class="delta-label">${s.label||s.key}</span><span class="delta-val">${s.from}→${s.to} (${val})</span></div>`);
+    deltaRows.push(`<div class="delta-row"><span class="delta-badge down">&#9660;</span><span class="delta-label">${escHtml(s.label||s.key)}</span><span class="delta-val">${escHtml(s.from)}→${escHtml(s.to)} (${escHtml(val)})</span></div>`);
   }
   const deltaHtml = hasDelta ? deltaRows.join('') : `<div style="padding:12px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:10px">${t('delta.noChanges','No changes since last sweep')}</div>`;
 
@@ -1551,7 +1551,15 @@ function renderRight(){
 
 // === HELPERS ===
 function getAge(d){const ms=Date.now()-new Date(d).getTime();const h=Math.floor(ms/3600000);if(h<1)return 'just now';if(h<24)return h+'h ago';return Math.floor(h/24)+'d ago'}
-function cleanText(t){return t.replace(/&#39;/g,"'").replace(/&#33;/g,"!").replace(/&amp;/g,"&").replace(/<[^>]+>/g,'')}
+// Escape all HTML metacharacters. Safe to interpolate into innerHTML / attributes.
+function escHtml(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+// Decode the few numeric entities we emit upstream, then strip any tags. Does NOT
+// HTML-escape — use only where the caller escapes at the sink (e.g. safePopupHtml).
+function stripTags(t){return String(t==null?'':t).replace(/&#39;/g,"'").replace(/&#33;/g,"!").replace(/&amp;/g,"&").replace(/<[^>]+>/g,'');}
+// HTML-safe display text for untrusted feed content: strip tags, then escape.
+function cleanText(t){return escHtml(stripTags(t));}
+// Escape popup body text while preserving intentional <br> line breaks.
+function safePopupHtml(text){return String(text==null?'':text).split(/<br\s*\/?>/i).map(escHtml).join('<br>');}
 function safeExternalUrl(raw){try{const u=new URL(raw,location.href);return u.protocol==='http:'||u.protocol==='https:'?u.toString():null}catch{return null}}
 
 // === BOOT SEQUENCE ===
@@ -1610,9 +1618,9 @@ function buildOsintPanel(panelClass='', maxHeight=260){
     const isU=p.urgentFlags&&p.urgentFlags.length>0;
     const views=p.views?p.views>=1000?`${(p.views/1000).toFixed(0)}K`:p.views:'';
     const age=p.date?getAge(p.date):'';
-    const flags=(p.urgentFlags||[]).map(f=>`<span class="tk-src tg" style="margin-right:2px">${f}</span>`).join('');
+    const flags=(p.urgentFlags||[]).map(f=>`<span class="tk-src tg" style="margin-right:2px">${escHtml(f)}</span>`).join('');
     const srcCls=p.isWho?'style="color:#69f0ae;border-color:rgba(105,240,174,0.4)"':'class="tk-src tg"';
-    return `<div class="tk-card ${isU?'urgent':''}"><span ${srcCls}>${(p.channel||'OSINT').toUpperCase().substring(0,14)}</span>${views?`<span class="tk-src other">${views}</span>`:''}<span class="tk-time">${age}</span>${flags}<div class="tk-head">${cleanText((p.text||'').substring(0,160))}</div></div>`;
+    return `<div class="tk-card ${isU?'urgent':''}"><span ${srcCls}>${escHtml((p.channel||'OSINT').toUpperCase().substring(0,14))}</span>${views?`<span class="tk-src other">${escHtml(views)}</span>`:''}<span class="tk-time">${age}</span>${flags}<div class="tk-head">${cleanText((p.text||'').substring(0,160))}</div></div>`;
   }).join('');
   const osintDuration=Math.max(25,osintItems.length*3);
   return `<div class="g-panel ${panelClass}" style="display:flex;flex-direction:column">
