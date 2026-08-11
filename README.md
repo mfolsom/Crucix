@@ -112,7 +112,9 @@ Dashboard at `http://localhost:3117`. Sweep data persists in `./runs/` via volum
 ### Live Dashboard
 A self-contained Jarvis-style HUD with:
 - **3D WebGL globe** (Globe.gl) with atmosphere glow, star field, and smooth rotation — plus a classic flat map toggle
-- **9 marker types** across both views: fire detections, air traffic, radiation sites, maritime chokepoints, SDR receivers, OSINT events, health alerts, geolocated news, conflict events
+- **11 marker types** across both views: fire detections, air traffic, radiation sites, maritime chokepoints, SDR receivers, OSINT events, health alerts, geolocated news, conflict events, earthquakes, and your local zone
+- **Activity Hotspots** — toggle a 3D hex-bin density layer (☀ button) that fuses every geo-located event into heat columns, plus a ranked "Activity Hotspots" panel showing the busiest regions this sweep
+- **Local Area panel** — a zoom-in on your home turf (defaults to Seattle) with nearby weather alerts, earthquakes, aircraft overhead, radiation, fires, a civic emergency-response feed, and local headlines. The ◎ button flies the globe to your area. Configure via `LOCAL_*` in `.env`.
 - **Animated 3D flight corridor arcs** between air traffic hotspots and global hubs
 - **Region filters** (World, Americas, Europe, Middle East, Asia Pacific, Africa) — rotates the globe or zooms the flat map
 - **Live market data** — indexes, crypto, energy, commodities via Yahoo Finance (no API key needed)
@@ -338,7 +340,7 @@ crucix/
 
 ---
 
-## Data Sources (27)
+## Data Sources (29)
 
 ### Tier 1: Core OSINT & Geopolitical (11)
 
@@ -379,6 +381,15 @@ crucix/
 | **Reddit** | Social sentiment from key subreddits | OAuth |
 | **Telegram** | 17 curated OSINT/conflict/finance channels (web scraping, expandable via config) | None |
 | **KiwiSDR** | Global HF radio receiver network (~600 receivers) | None |
+
+### Tier 3b: Geophysical & Local (2)
+
+| Source | What It Tracks | Auth |
+|--------|---------------|------|
+| **USGS** | Global real-time earthquakes (M2.5+, 24h feed) — feeds the hotspot map | None |
+| **Local** | Aggregated feeds scoped to your area (NWS weather, USGS quakes, OpenSky flights overhead, Safecast radiation, FIRMS fires, civic 911). Configurable via `LOCAL_*`. | None* |
+
+\* Local reuses the keyless sources above; only the optional nearby-fires layer needs `FIRMS_MAP_KEY`.
 
 ### Tier 4: Space & Satellites (1)
 

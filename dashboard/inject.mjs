@@ -23,6 +23,15 @@ function isEnglish(text) {
   return !cyrillic.test(text.substring(0, 80));
 }
 
+// Great-circle distance (km) \u2014 used to scope RSS news to the local area.
+function haversineKmLocal(lat1, lon1, lat2, lon2) {
+  const R = 6371, toRad = d => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return +(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(1);
+}
+
 // === Geo-tagging keyword map ===
 const geoKeywords = {
   'Ukraine':[49,32],'Russia':[56,38],'Moscow':[55.7,37.6],'Kyiv':[50.4,30.5],
@@ -539,6 +548,19 @@ export async function synthesize(data) {
     }))
   };
 
+  // USGS earthquakes — geo-located seismic events (feeds hotspot map + local panel)
+  const usgsData = data.sources.USGS || {};
+  const usgs = {
+    total: usgsData.total || 0,
+    maxMag: usgsData.maxMag ?? null,
+    significant: usgsData.significant || 0,
+    quakes: (usgsData.quakes || []).filter(q => q.lat != null && q.lon != null).slice(0, 40).map(q => ({
+      mag: q.mag, place: q.place, lat: q.lat, lon: q.lon, depth: q.depth,
+      time: q.time, tsunami: q.tsunami || false, url: q.url,
+    })),
+    signals: usgsData.signals || [],
+  };
+
   const health = Object.entries(data.sources).map(([name, src]) => ({
     n: name, err: Boolean(src.error), stale: Boolean(src.stale)
   }));
@@ -596,6 +618,36 @@ export async function synthesize(data) {
   // Fetch RSS
   const news = await fetchAllNews();
 
+  // Local-area panel — pass through the aggregator's structured output, and
+  // attach nearby news computed from the RSS feed by distance to the center.
+  const localData = data.sources.Local || {};
+  let local = null;
+  if (localData && !localData.error && localData.center) {
+    const c = localData.center;
+    const rk = localData.radiusKm || 120;
+    const localNews = (news || [])
+      .filter(n => n.lat != null && n.lon != null)
+      .map(n => ({ ...n, distanceKm: haversineKmLocal(c.lat, c.lon, n.lat, n.lon) }))
+      .filter(n => n.distanceKm <= rk * 2)
+      .sort((a, b) => a.distanceKm - b.distanceKm)
+      .slice(0, 6)
+      .map(n => ({ source: n.source, title: (n.title || '').substring(0, 120), url: n.url || null, region: n.region }));
+    local = {
+      label: localData.label || 'Local',
+      center: c,
+      radiusKm: rk,
+      bbox: localData.bbox || null,
+      weather: localData.weather || { alerts: [] },
+      quakes: localData.quakes || { quakes: [] },
+      flights: localData.flights || { count: 0, sample: [] },
+      radiation: localData.radiation || { readings: 0 },
+      fires: localData.fires || { count: 0, fires: [] },
+      civic: localData.civic || { incidents: [] },
+      news: localNews,
+      signals: localData.signals || [],
+    };
+  }
+
   const V2 = {
     meta: data.crucix, air, thermal, tSignals, chokepoints, nuke, nukeSignals,
     airMeta: {
@@ -609,6 +661,7 @@ export async function synthesize(data) {
     sdr: { total: sdrNet.totalReceivers || 0, online: sdrNet.online || 0, zones: sdrZones },
     tg: { posts: tgData.totalPosts || 0, urgent: tgUrgent, topPosts: tgTop },
     who, fred, energy, metals, bls, treasury, gscpi, defense, noaa, epa, acled, gdelt, space, health, news,
+    usgs, local, // Earthquakes + local-area intelligence panel
     markets, // Live Yahoo Finance market data
     ideas: [], ideasSource: 'disabled',
     // newsFeed for ticker (merged RSS + GDELT + Telegram)

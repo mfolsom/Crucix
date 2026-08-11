@@ -120,6 +120,38 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .map-ctrl-btn:hover{color:var(--accent);border-color:var(--border-bright);background:rgba(100,240,200,0.06)}
 .map-ctrl-btn.map-toggle{font-size:14px}
 .map-ctrl-btn.off{opacity:0.4}
+.map-ctrl-btn.active{color:#ff8c3c;border-color:#ff8c3c;background:rgba(255,140,60,0.12)}
+/* Activity Hotspots panel */
+.hs-toggle{font-family:var(--mono);font-size:9px;letter-spacing:0.08em;padding:2px 7px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;transition:all 0.2s}
+.hs-toggle:hover{color:var(--accent);border-color:var(--border-bright)}
+.hs-toggle.active{color:#ff8c3c;border-color:#ff8c3c;background:rgba(255,140,60,0.1)}
+.hs-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.hs-name{flex:0 0 120px;font-family:var(--mono);font-size:10px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hs-bar{flex:1;height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden}
+.hs-bar span{display:block;height:100%;border-radius:3px}
+.hs-val{flex:0 0 auto;font-family:var(--mono);font-size:10px;color:var(--dim);min-width:22px;text-align:right}
+/* Local Area panel */
+.local-panel{border-color:rgba(120,230,255,0.28)}
+.loc-zoom{font-family:var(--mono);font-size:9px;letter-spacing:0.08em;padding:2px 8px;border:1px solid rgba(120,230,255,0.4);background:rgba(120,230,255,0.06);color:#78e6ff;cursor:pointer;transition:all 0.2s}
+.loc-zoom:hover{background:rgba(120,230,255,0.16)}
+.loc-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.loc-stat{text-align:center;padding:6px 2px;border:1px solid var(--border);background:rgba(255,255,255,0.02)}
+.loc-stat-v{font-family:var(--mono);font-size:16px;font-weight:600;color:var(--accent);line-height:1.1}
+.loc-stat-l{font-family:var(--mono);font-size:8px;letter-spacing:0.06em;color:var(--dim);margin-top:2px}
+.loc-sec-label{font-family:var(--mono);font-size:8.5px;letter-spacing:0.12em;color:var(--dim);margin:9px 0 5px;padding-bottom:2px;border-bottom:1px solid var(--border)}
+.loc-item{display:flex;gap:7px;align-items:flex-start;margin-bottom:5px}
+.loc-tag{flex:0 0 auto;font-family:var(--mono);font-size:9px;padding:1px 5px;border:1px solid var(--border);border-radius:2px;white-space:nowrap}
+.loc-body{min-width:0}
+.loc-line{font-size:11px;color:var(--txt);line-height:1.3;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.loc-sub{font-family:var(--mono);font-size:9px;color:var(--dim);margin-top:1px}
+.loc-empty{font-family:var(--mono);font-size:9px;color:var(--dim);padding:2px 0 4px;opacity:0.7}
+.loc-chips{display:flex;flex-wrap:wrap;gap:4px}
+.loc-chip{font-family:var(--mono);font-size:9px;padding:2px 6px;border:1px solid var(--border);color:var(--accent2);background:rgba(100,240,200,0.04)}
+.loc-news{font-size:11px;line-height:1.35;margin-bottom:5px;color:var(--txt)}
+.loc-news a{color:var(--txt);text-decoration:none}
+.loc-news a:hover{color:var(--accent)}
+.loc-src{font-family:var(--mono);font-size:8.5px;color:var(--accent2);letter-spacing:0.04em}
+.loc-note{margin-top:8px;padding:5px 8px;border:1px solid rgba(255,140,60,0.3);background:rgba(255,140,60,0.06);font-family:var(--mono);font-size:9px;color:#ffab6b}
 /* Map popup */
 .map-popup{position:absolute;z-index:20;width:280px;padding:12px;background:rgba(6,10,14,0.95);border:1px solid rgba(100,240,200,0.25);backdrop-filter:blur(12px);box-shadow:0 8px 32px rgba(0,0,0,0.5);pointer-events:auto;display:none}
 .map-popup.show{display:block}
@@ -347,6 +379,8 @@ body.low-perf .ticker-wrap::-webkit-scrollbar-thumb{background:rgba(100,240,200,
           <button class="map-ctrl-btn" onclick="mapZoom(1.5)" title="Zoom in">+</button>
           <button class="map-ctrl-btn" onclick="mapZoom(0.67)" title="Zoom out">&minus;</button>
           <button class="map-ctrl-btn map-toggle" id="flightToggle" onclick="toggleFlights()" title="Toggle flight routes">&#9992;</button>
+          <button class="map-ctrl-btn map-toggle" id="hotspotToggleBtn" onclick="toggleHotspots()" title="Toggle activity hotspots">&#9737;</button>
+          <button class="map-ctrl-btn map-toggle" id="localZoomBtn" onclick="zoomToLocal()" title="Zoom to local area">&#9678;</button>
         </div>
         <button class="proj-toggle" id="projToggle" onclick="toggleMapMode()">GLOBE MODE</button>
         <div class="map-popup" id="mapPopup"><button class="pp-close" onclick="closePopup()">&times;</button><div class="pp-head"></div><div class="pp-text"></div><div class="pp-meta"></div></div>
@@ -681,7 +715,7 @@ function bindMapLifecycleEvents(){
 function renderMapLegend(){
   document.getElementById('mapLegend').innerHTML=
     [{c:'#64f0c8',l:t('map.airTraffic','Air Traffic')},{c:'#ff5f63',l:t('map.thermalFire','Thermal/Fire')},{c:'rgba(255,120,80,0.8)',l:t('map.conflict','Conflict')},{c:'#44ccff',l:t('map.sdrReceiver','SDR Receiver')},
-     {c:'#ffe082',l:t('map.nuclearSite','Nuclear Site')},{c:'#b388ff',l:t('map.chokepoint','Chokepoint')},{c:'#ffb84c',l:t('map.osintEvent','OSINT Event')},{c:'#69f0ae',l:t('map.healthAlert','Health Alert')},{c:'#81d4fa',l:t('map.worldNews','World News')},{c:'#ff9800',l:t('map.weatherAlert','Weather Alert')},{c:'#cddc39',l:t('map.epaRadNet','EPA RadNet')},{c:'#ffffff',l:t('map.spaceStation','Space Station')},{c:'#6495ed',l:t('map.gdeltEvent','GDELT Event')}]
+     {c:'#ffe082',l:t('map.nuclearSite','Nuclear Site')},{c:'#b388ff',l:t('map.chokepoint','Chokepoint')},{c:'#ffb84c',l:t('map.osintEvent','OSINT Event')},{c:'#69f0ae',l:t('map.healthAlert','Health Alert')},{c:'#81d4fa',l:t('map.worldNews','World News')},{c:'#ff9800',l:t('map.weatherAlert','Weather Alert')},{c:'#cddc39',l:t('map.epaRadNet','EPA RadNet')},{c:'#ffffff',l:t('map.spaceStation','Space Station')},{c:'#6495ed',l:t('map.gdeltEvent','GDELT Event')},{c:'#ff8c3c',l:t('map.earthquake','Earthquake')},{c:'#78e6ff',l:t('map.localZone','Local Zone')}]
     .map(x=>`<div class="leg-item"><div class="leg-dot" style="background:${x.c}"></div>${x.l}</div>`).join('');
 }
 
@@ -760,6 +794,14 @@ function initGlobe(){
     .ringMaxRadius(d => d.maxR || 3)
     .ringPropagationSpeed(d => d.speed || 2)
     .ringRepeatPeriod(d => d.period || 800)
+    // Hex-bin layer (activity hotspots — 3D density columns, toggled on)
+    .hexBinPointWeight('weight')
+    .hexBinResolution(3)
+    .hexAltitude(d => Math.min(0.02 + d.sumWeight * 0.006, 0.4))
+    .hexTopColor(d => hotspotColor(d.sumWeight, 0.92))
+    .hexSideColor(d => hotspotColor(d.sumWeight, 0.35))
+    .hexBinMerge(false)
+    .hexLabel(d => `<b>${d.points.length} events</b><br><span style="opacity:0.7">intensity ${d.sumWeight.toFixed(0)}</span>`)
     // Labels layer
     .labelText(d => d.text)
     .labelSize(d => d.size || 0.4)
@@ -972,6 +1014,33 @@ function plotMarkers(){
       popText:g.name||'Global event detection'
     });
   });
+
+  // === USGS earthquakes (amber → red by magnitude) ===
+  (D.usgs?.quakes||[]).forEach(q=>{
+    if(q.lat==null||q.lon==null) return;
+    const mag=q.mag||1;
+    points.push({
+      lat:q.lat, lng:q.lon, size:0.1+Math.min(mag/12,0.32), alt:0.006,
+      color: mag>=5?'rgba(255,80,80,0.92)':mag>=3.5?'rgba(255,140,60,0.8)':'rgba(255,196,120,0.65)',
+      type:'quake', priority:2,
+      popHead:`M${mag} Earthquake`, popMeta:'USGS Seismic',
+      popText:`${q.place||''}<br>Depth: ${q.depth??'--'} km${q.tsunami?'<br>&#9888; TSUNAMI FLAG':''}`
+    });
+  });
+
+  // === Local center marker (home turf) ===
+  if(D.local?.center){
+    points.push({
+      lat:D.local.center.lat, lng:D.local.center.lon, size:0.5, alt:0.03,
+      color:'rgba(120,230,255,0.95)', type:'local', priority:1,
+      popHead:`${D.local.label||'Local'} — Home`, popMeta:'Local Intelligence Zone',
+      popText:`Local monitoring center<br>Radius: ${D.local.radiusKm||120} km`
+    });
+    labels.push({lat:D.local.center.lat, lng:D.local.center.lon+1.5, text:'▼ '+(D.local.label||'LOCAL').toUpperCase(), size:0.4, color:'rgba(120,230,255,0.9)'});
+  }
+
+  // === Hotspot hex-bin layer (activity density) ===
+  globe.hexBinPointsData(hotspotsVisible ? collectGeoEvents() : []);
 
   // Set points on globe
   globe.pointsData(points);
@@ -1251,6 +1320,8 @@ function plotFlatMarkers(){
   });
   // GDELT geo events
   (D.gdelt?.geoPoints||[]).forEach(g=>{addPt(g.lat,g.lon,2.5,'rgba(100,149,237,0.5)','rgba(100,149,237,0.2)',ev=>showPopup(ev,'GDELT Event',g.name||'','GDELT · '+g.count+' reports'),3)});
+  (D.usgs?.quakes||[]).forEach(q=>{if(q.lat==null||q.lon==null)return;const mag=q.mag||1;const col=mag>=5?'rgba(255,80,80,0.85)':mag>=3.5?'rgba(255,140,60,0.75)':'rgba(255,196,120,0.6)';addPt(q.lat,q.lon,2+Math.min(mag,6),col,'rgba(255,140,60,0.25)',ev=>showPopup(ev,`M${mag} Earthquake`,`${q.place||''}<br>Depth: ${q.depth??'--'} km${q.tsunami?'<br>&#9888; TSUNAMI':''}`,'USGS'),2)});
+  if(D.local?.center){addPt(D.local.center.lat,D.local.center.lon,7,'rgba(120,230,255,0.9)','rgba(120,230,255,0.3)',ev=>showPopup(ev,`${D.local.label||'Local'} — Home`,`Local monitoring center<br>Radius: ${D.local.radiusKm||120} km`,'Local Zone'),1);}
   // ACLED
   (D.acled?.deadliestEvents||[]).filter(e=>e.lat&&e.lon).forEach(e=>{
     const[x,y]=proj([e.lon,e.lat]);if(!x||!y)return;
@@ -1529,6 +1600,8 @@ function renderRight(){
   const deltaHtml = hasDelta ? deltaRows.join('') : `<div style="padding:12px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:10px">${t('delta.noChanges','No changes since last sweep')}</div>`;
 
   document.getElementById('rightRail').innerHTML=`
+    ${renderLocalPanel()}
+    ${renderHotspotsPanel()}
     <div class="g-panel right-signals">
       <div class="sec-head"><h3>${t('panels.crossSourceSignals','Cross-Source Signals')}</h3><span class="badge">${t('badges.worldview','WORLDVIEW')}</span></div>
       ${signals}
@@ -1561,6 +1634,144 @@ function cleanText(t){return escHtml(stripTags(t));}
 // Escape popup body text while preserving intentional <br> line breaks.
 function safePopupHtml(text){return String(text==null?'':text).split(/<br\s*\/?>/i).map(escHtml).join('<br>');}
 function safeExternalUrl(raw){try{const u=new URL(raw,location.href);return u.protocol==='http:'||u.protocol==='https:'?u.toString():null}catch{return null}}
+
+// ─── Activity Hotspots + Local Area (feature additions) ─────────────────────
+let hotspotsVisible = false;
+
+function haversineKmClient(a,b,c,d){
+  const R=6371,r=x=>x*Math.PI/180;
+  const dLat=r(c-a),dLon=r(d-b);
+  const h=Math.sin(dLat/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));
+}
+
+// Named regions used to label the hotspot ranking. Each event is attributed to
+// its nearest centroid, so the whole globe is covered.
+const HOTSPOT_REGIONS=[
+  {name:'Eastern Europe',lat:49,lon:32},{name:'Middle East',lat:31,lon:40},
+  {name:'East Asia',lat:32,lon:115},{name:'Korea / Japan',lat:37,lon:130},
+  {name:'South Asia',lat:22,lon:78},{name:'Southeast Asia',lat:10,lon:110},
+  {name:'Central Asia',lat:42,lon:68},{name:'Western Europe',lat:48,lon:4},
+  {name:'North America East',lat:40,lon:-80},{name:'North America West',lat:42,lon:-118},
+  {name:'Central Am. / Caribbean',lat:17,lon:-85},{name:'South America',lat:-15,lon:-60},
+  {name:'North Africa',lat:28,lon:15},{name:'Sub-Saharan Africa',lat:2,lon:25},
+  {name:'Southern Africa',lat:-26,lon:26},{name:'Oceania',lat:-27,lon:140},
+];
+
+// Gather every geo-located event (real coordinates only) with an intensity weight.
+function collectGeoEvents(){
+  const ev=[];
+  (D.thermal||[]).forEach(t=>(t.fires||[]).forEach(f=>{if(f.lat!=null&&f.lon!=null)ev.push({lat:f.lat,lng:f.lon,weight:1+Math.min((f.frp||0)/50,4),kind:'fire'})}));
+  (D.acled?.deadliestEvents||[]).forEach(e=>{if(e.lat!=null&&e.lon!=null)ev.push({lat:e.lat,lng:e.lon,weight:1.5+Math.log2(Math.max(e.fatalities||1,1)),kind:'conflict'})});
+  (D.gdelt?.geoPoints||[]).forEach(g=>{if(g.lat!=null&&g.lon!=null)ev.push({lat:g.lat,lng:g.lon,weight:1+Math.min((g.count||1)/5,4),kind:'news'})});
+  (D.news||[]).forEach(n=>{if(n.lat!=null&&n.lon!=null)ev.push({lat:n.lat,lng:n.lon,weight:1,kind:'news'})});
+  (D.noaa?.alerts||[]).forEach(a=>{if(a.lat!=null&&a.lon!=null)ev.push({lat:a.lat,lng:a.lon,weight:1.5,kind:'weather'})});
+  (D.usgs?.quakes||[]).forEach(q=>{if(q.lat!=null&&q.lon!=null)ev.push({lat:q.lat,lng:q.lon,weight:Math.max((q.mag||1)-2,0.5),kind:'quake'})});
+  (D.epa?.stations||[]).forEach(s=>{if(s.lat!=null&&s.lon!=null)ev.push({lat:s.lat,lng:s.lon,weight:0.6,kind:'radiation'})});
+  return ev;
+}
+
+// Weight → warm color ramp (cool teal for low density, hot red for high).
+function hotspotColor(w,alpha){
+  const a=alpha==null?0.85:alpha;
+  const stops=[[0,[80,240,200]],[4,[120,220,120]],[10,[255,210,90]],[20,[255,140,60]],[40,[255,70,70]]];
+  let lo=stops[0],hi=stops[stops.length-1];
+  for(let i=0;i<stops.length-1;i++){if(w>=stops[i][0]&&w<=stops[i+1][0]){lo=stops[i];hi=stops[i+1];break}}
+  const span=(hi[0]-lo[0])||1,f=Math.max(0,Math.min(1,(w-lo[0])/span));
+  const c=lo[1].map((v,i)=>Math.round(v+(hi[1][i]-v)*f));
+  return `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+}
+
+// Rank named regions by total activity weight.
+function computeHotspots(){
+  const events=collectGeoEvents();
+  const tally=HOTSPOT_REGIONS.map(r=>({...r,count:0,weight:0}));
+  for(const e of events){
+    let best=0,bestD=Infinity;
+    for(let i=0;i<tally.length;i++){const d=haversineKmClient(e.lat,e.lng,tally[i].lat,tally[i].lon);if(d<bestD){bestD=d;best=i}}
+    tally[best].count++; tally[best].weight+=e.weight;
+  }
+  return tally.filter(r=>r.count>0).sort((a,b)=>b.weight-a.weight);
+}
+
+function toggleHotspots(){
+  hotspotsVisible=!hotspotsVisible;
+  const btn=document.getElementById('hotspotToggle');
+  if(btn){ btn.classList.toggle('active',hotspotsVisible); btn.textContent='MAP '+(hotspotsVisible?'ON':'OFF'); }
+  const mapBtn=document.getElementById('hotspotToggleBtn');
+  if(mapBtn) mapBtn.classList.toggle('active',hotspotsVisible);
+  if(globe) globe.hexBinPointsData(hotspotsVisible?collectGeoEvents():[]);
+}
+
+// Fly the globe to the local monitoring center.
+function zoomToLocal(){
+  if(!D.local?.center) return;
+  const {lat,lon}=D.local.center;
+  if(globe && document.getElementById('globeViz').style.display!=='none'){
+    globe.controls().autoRotate=false;
+    globe.pointOfView({lat,lng:lon,altitude:0.55},1200);
+  } else if(typeof toggleMapMode==='function'){
+    // Switch to globe view, then fly there once initialized.
+    toggleMapMode();
+    setTimeout(()=>{if(globe){globe.controls().autoRotate=false;globe.pointOfView({lat,lng:lon,altitude:0.55},1200);}},400);
+  }
+}
+
+// ─── Hotspots ranking panel (right rail) ────────────────────────────────────
+function renderHotspotsPanel(){
+  const hs=computeHotspots().slice(0,6);
+  const max=hs.length?hs[0].weight:1;
+  const rows=hs.map(r=>{
+    const pct=Math.max(6,Math.round(r.weight/max*100));
+    return `<div class="hs-row"><span class="hs-name">${escHtml(r.name)}</span><div class="hs-bar"><span style="width:${pct}%;background:${hotspotColor(r.weight,0.9)}"></span></div><span class="hs-val">${r.count}</span></div>`;
+  }).join('');
+  const body=hs.length?rows:`<div style="padding:10px;text-align:center;color:var(--dim);font-family:var(--mono);font-size:10px">No geo-located activity this sweep</div>`;
+  return `<div class="g-panel">
+    <div class="sec-head"><h3>Activity Hotspots</h3><button class="hs-toggle${hotspotsVisible?' active':''}" id="hotspotToggle" onclick="toggleHotspots()" title="Toggle hotspot density on the globe">MAP ${hotspotsVisible?'ON':'OFF'}</button></div>
+    ${body}
+  </div>`;
+}
+
+// ─── Local-area panel (right rail) ──────────────────────────────────────────
+function renderLocalPanel(){
+  const L=D.local;
+  if(!L){
+    return `<div class="g-panel"><div class="sec-head"><h3>Local Area</h3><span class="badge">OFFLINE</span></div>
+      <div style="padding:10px;color:var(--dim);font-family:var(--mono);font-size:10px;line-height:1.6">No local feed yet. Set LOCAL_LAT / LOCAL_LON in .env (defaults to Seattle) and run a sweep.</div></div>`;
+  }
+  const wx=(L.weather?.alerts||[]);
+  const quakes=(L.quakes?.quakes||[]);
+  const flights=L.flights||{count:0,sample:[]};
+  const rad=L.radiation||{readings:0};
+  const fires=L.fires||{count:0};
+  const civic=(L.civic?.incidents||[]);
+  const news=(L.news||[]);
+  const sev=s=>/Extreme|Severe/i.test(s)?'var(--warn)':/Moderate/i.test(s)?'#ffab40':'var(--accent)';
+
+  const wxHtml=wx.length?wx.slice(0,4).map(a=>`<div class="loc-item"><span class="loc-tag" style="color:${sev(a.severity)};border-color:${sev(a.severity)}">${escHtml((a.severity||'').substring(0,4).toUpperCase())}</span><div class="loc-body"><div class="loc-line">${escHtml(a.event||'Alert')}</div><div class="loc-sub">${escHtml(a.area||'')}</div></div></div>`).join(''):`<div class="loc-empty">No active weather alerts</div>`;
+
+  const qHtml=quakes.length?quakes.slice(0,4).map(q=>`<div class="loc-item"><span class="loc-tag" style="color:${(q.mag||0)>=4?'var(--warn)':'#ffc478'};border-color:#ffc478">M${q.mag}</span><div class="loc-body"><div class="loc-line">${escHtml(q.place||'')}</div><div class="loc-sub">${q.distanceKm!=null?q.distanceKm+' km away · ':''}${q.depth??'--'} km deep</div></div></div>`).join(''):`<div class="loc-empty">No recent quakes nearby</div>`;
+
+  const flSample=(flights.sample||[]).slice(0,4).map(f=>`<span class="loc-chip">${escHtml(f.callsign||'?')}${f.altitude?` · ${Math.round(f.altitude)}m`:''}</span>`).join('');
+  const civicHtml=civic.length?civic.slice(0,4).map(c=>`<div class="loc-item"><span class="loc-tag" style="color:#ff8f6b;border-color:#ff8f6b">911</span><div class="loc-body"><div class="loc-line">${escHtml(c.type||'Incident')}</div><div class="loc-sub">${escHtml(c.address||'')}${c.time?' · '+getAge(c.time):''}</div></div></div>`).join(''):`<div class="loc-empty">No recent incidents</div>`;
+  const newsHtml=news.length?news.slice(0,4).map(n=>{const u=n.url?safeExternalUrl(n.url):null;const head=`<span class="loc-src">${escHtml((n.source||'NEWS').substring(0,10))}</span> ${cleanText(n.title||'')}`;return `<div class="loc-news">${u?`<a href="${escHtml(u)}" target="_blank" rel="noopener noreferrer">${head}</a>`:head}</div>`}).join(''):`<div class="loc-empty">No local headlines</div>`;
+
+  return `<div class="g-panel local-panel">
+    <div class="sec-head"><h3>Local &mdash; ${escHtml(L.label||'Area')}</h3><button class="loc-zoom" onclick="zoomToLocal()" title="Fly the globe to your area">&#9678; ZOOM</button></div>
+    <div class="loc-stats">
+      <div class="loc-stat"><div class="loc-stat-v" style="color:${wx.length?'var(--warn)':'var(--accent)'}">${wx.length}</div><div class="loc-stat-l">WX ALERTS</div></div>
+      <div class="loc-stat"><div class="loc-stat-v">${flights.count||0}</div><div class="loc-stat-l">AIRCRAFT</div></div>
+      <div class="loc-stat"><div class="loc-stat-v" style="color:${quakes.length?'#ffc478':'var(--accent)'}">${quakes.length}</div><div class="loc-stat-l">QUAKES</div></div>
+      <div class="loc-stat"><div class="loc-stat-v" style="color:${rad.anomaly?'var(--warn)':'var(--accent)'}">${rad.avgCPM??'--'}</div><div class="loc-stat-l">CPM</div></div>
+    </div>
+    <div class="loc-sec-label">WEATHER</div>${wxHtml}
+    <div class="loc-sec-label">SEISMIC</div>${qHtml}
+    ${flSample?`<div class="loc-sec-label">OVERHEAD (${flights.count||0})</div><div class="loc-chips">${flSample}</div>`:''}
+    <div class="loc-sec-label">EMERGENCY RESPONSE${civic.length&&L.civic?.source?' · '+escHtml(L.civic.source):''}</div>${civicHtml}
+    <div class="loc-sec-label">LOCAL NEWS</div>${newsHtml}
+    ${fires.count>0?`<div class="loc-note">&#128293; ${fires.count} active fire detection(s) within ${L.radiusKm} km</div>`:''}
+  </div>`;
+}
 
 // === BOOT SEQUENCE ===
 function runBoot(){

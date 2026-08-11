@@ -5,6 +5,7 @@
 
 import './utils/env.mjs'; // Load API keys from .env
 import { pathToFileURL } from 'node:url';
+import config from '../crucix.config.mjs';
 
 // === Tier 1: Core OSINT & Geopolitical ===
 import { briefing as gdelt } from './sources/gdelt.mjs';
@@ -40,6 +41,10 @@ import { briefing as kiwisdr } from './sources/kiwisdr.mjs';
 // === Tier 4: Space & Satellites ===
 import { briefing as space } from './sources/space.mjs';
 
+// === Tier 3b: Geophysical & Local ===
+import { briefing as usgs } from './sources/usgs.mjs';
+import { briefing as local } from './sources/local.mjs';
+
 // === Tier 5: Live Market Data ===
 import { briefing as yfinance } from './sources/yfinance.mjs';
 
@@ -67,7 +72,7 @@ export async function runSource(name, fn, ...args) {
 }
 
 export async function fullBriefing() {
-  console.error('[Crucix] Starting intelligence sweep — 29 sources...');
+  console.error('[Crucix] Starting intelligence sweep — 31 sources...');
   const start = Date.now();
 
   const allPromises = [
@@ -101,6 +106,8 @@ export async function fullBriefing() {
     runSource('Reddit', reddit),
     runSource('Telegram', telegram),
     runSource('KiwiSDR', kiwisdr),
+    runSource('USGS', usgs),
+    runSource('Local', local, config.local),
 
     // Tier 4: Space & Satellites
     runSource('Space', space),
